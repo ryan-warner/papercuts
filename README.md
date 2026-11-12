@@ -59,14 +59,6 @@ linked worktrees as one project. Each entry keeps the worktree and directory
 where it was recorded. Commands fall back to the current directory outside
 Git. Use `--project PATH` to set an exact project scope instead.
 
-Entries made by an older release are grouped automatically while their
-worktrees are still registered with Git. If a recorded worktree was deleted,
-merge its old project path explicitly:
-
-```sh
-papercuts projects merge /path/to/deleted-worktree --into /path/to/primary-checkout
-```
-
 Machine callers should request `--json` or `--jsonl`. Diagnostics are written to
 stderr and structured results to stdout.
 

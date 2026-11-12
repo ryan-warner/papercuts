@@ -346,12 +346,3 @@ func (s *Store) AssociateRepository(ctx context.Context, repositoryID, projectPa
 		WHERE repository_id = ? OR project_path IN (`+placeholders+")", args...)
 	return err
 }
-
-func (s *Store) MergeProject(ctx context.Context, source, repositoryID, projectPath string) (int64, error) {
-	result, err := s.db.ExecContext(ctx, `UPDATE entries SET repository_id = ?, project_path = ?
-		WHERE repository_id = ? OR project_path = ?`, repositoryID, projectPath, source, source)
-	if err != nil {
-		return 0, err
-	}
-	return result.RowsAffected()
-}

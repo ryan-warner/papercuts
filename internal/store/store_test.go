@@ -138,23 +138,3 @@ func TestAssociateRepositoryMigratesLegacyWorktree(t *testing.T) {
 		t.Fatalf("unexpected associated entry: %#v", got)
 	}
 }
-
-func TestMergeDeletedLegacyProject(t *testing.T) {
-	s, err := Open(filepath.Join(t.TempDir(), "papercuts.db"))
-	if err != nil {
-		t.Fatal(err)
-	}
-	defer s.Close()
-	ctx := context.Background()
-	if _, err := s.Add(ctx, "/deleted", "/deleted", "/deleted", "/deleted", "legacy entry"); err != nil {
-		t.Fatal(err)
-	}
-	n, err := s.MergeProject(ctx, "/deleted", "/main/.git", "/main")
-	if err != nil || n != 1 {
-		t.Fatalf("merge: n=%d err=%v", n, err)
-	}
-	stats, err := s.Stats(ctx, "/main/.git", "/main", false)
-	if err != nil || stats.Total != 1 {
-		t.Fatalf("stats: %#v err=%v", stats, err)
-	}
-}

@@ -423,69 +423,7 @@ func (a *app) projectsCommand() *cobra.Command {
 			return w.Flush()
 		},
 	}
-	cmd.AddCommand(a.projectsMergeCommand())
 	return cmd
-}
-
-func (a *app) projectsMergeCommand() *cobra.Command {
-	var destination string
-	cmd := &cobra.Command{
-		Use: "merge <source-project>", Short: "Merge a legacy project into a repository", Args: cobra.ExactArgs(1),
-		RunE: func(cmd *cobra.Command, args []string) error {
-			if destination == "" {
-				return &appError{code: 2, err: errors.New("--into is required")}
-			}
-			target, err := project.Resolve(destination, "")
-			if err != nil {
-				return &appError{code: 2, err: fmt.Errorf("resolve destination project: %w", err)}
-			}
-			source, err := canonicalMissingPath(args[0])
-			if err != nil {
-				return err
-			}
-			s, err := a.scopedStore(cmd.Context(), target)
-			if err != nil {
-				return err
-			}
-			defer s.Close()
-			affected, err := s.MergeProject(cmd.Context(), source, target.RepositoryID, target.ProjectPath)
-			if err != nil {
-				return err
-			}
-			result := map[string]any{"source_project": source, "repository_id": target.RepositoryID, "project_path": target.ProjectPath, "affected": affected}
-			if a.jsonOutput {
-				return writeJSON(a.out, result)
-			}
-			fmt.Fprintf(a.out, "Merged %d papercut(s) into %s\n", affected, target.ProjectPath)
-			return nil
-		},
-	}
-	cmd.Flags().StringVar(&destination, "into", "", "primary checkout or linked worktree receiving the entries")
-	return cmd
-}
-
-func canonicalMissingPath(path string) (string, error) {
-	abs, err := filepath.Abs(path)
-	if err != nil {
-		return "", err
-	}
-	current := filepath.Clean(abs)
-	var missing []string
-	for {
-		resolved, resolveErr := filepath.EvalSymlinks(current)
-		if resolveErr == nil {
-			for i := len(missing) - 1; i >= 0; i-- {
-				resolved = filepath.Join(resolved, missing[i])
-			}
-			return filepath.Clean(resolved), nil
-		}
-		parent := filepath.Dir(current)
-		if parent == current {
-			return "", resolveErr
-		}
-		missing = append(missing, filepath.Base(current))
-		current = parent
-	}
 }
 
 func (a *app) fixCommand() *cobra.Command {
