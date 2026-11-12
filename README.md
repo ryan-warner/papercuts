@@ -16,8 +16,6 @@ papercuts review
 
 Download the archive for your operating system and processor from the
 [Releases page](https://github.com/ryan-warner/papercuts/releases).
-This repository is private, so you must sign in to GitHub with ForeFlight
-access before you download a release.
 
 On macOS or Linux, extract the archive and install the executable in a
 directory on `PATH`:
@@ -44,11 +42,22 @@ GOPRIVATE=github.com/ryan-warner/* \
 
 ## Agent usage
 
-Run `papercuts agent-instructions` to print a short instruction suitable for an
-`AGENTS.md` file. Commands group a primary Git checkout and all its linked
-worktrees as one project. Each entry keeps the worktree and directory where it
-was recorded. Commands fall back to the current directory outside Git. Use
-`--project PATH` to set an exact project scope instead.
+Because papercuts applies across projects, put its instructions in your global
+agent guidance. Run the commands once for each agent you use:
+
+```sh
+# Codex
+papercuts agent-instructions >> "$HOME/.codex/AGENTS.md"
+
+# Claude Code
+papercuts agent-instructions >> "$HOME/.claude/CLAUDE.md"
+```
+
+Use a repository-level `AGENTS.md` or `CLAUDE.md` only when the guidance should
+apply to that repository. Commands group a primary Git checkout and all its
+linked worktrees as one project. Each entry keeps the worktree and directory
+where it was recorded. Commands fall back to the current directory outside
+Git. Use `--project PATH` to set an exact project scope instead.
 
 Entries made by an older release are grouped automatically while their
 worktrees are still registered with Git. If a recorded worktree was deleted,
