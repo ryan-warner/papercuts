@@ -1,0 +1,5 @@
+/papercuts
+/dist/
+*.db
+*.db-shm
+*.db-wal
