@@ -137,3 +137,21 @@ setup_agents() {
   done
 }
 setup_agents
+
+sign_off() {
+  configured=false
+  for file in "$HOME/.codex/AGENTS.md" "$HOME/.claude/CLAUDE.md" "$HOME/.config/opencode/AGENTS.md"; do
+    if grep -q "papercuts" "$file" 2>/dev/null; then
+      configured=true
+      break
+    fi
+  done
+  echo ""
+  echo "all set. work as normal."
+  if [ "$configured" = true ]; then
+    echo "ask an agent to \"fix the papercuts\" whenever you're ready."
+  else
+    echo "log friction with papercuts add \"<observation>\", then run papercuts fix when you're ready."
+  fi
+}
+sign_off
