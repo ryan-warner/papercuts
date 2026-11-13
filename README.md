@@ -14,32 +14,29 @@ papercuts review
 
 See the [command guide](docs/commands.md) for the complete reference.
 
-## Install a release
+## Install
 
-Download the archive for your operating system and processor from the
-[Releases page](https://github.com/ryan-warner/papercuts/releases).
-
-On macOS or Linux, extract the archive and install the executable in a
-directory on `PATH`:
+Install the latest release:
 
 ```sh
-tar -xzf papercuts_*.tar.gz
-install papercuts "$HOME/.local/bin/papercuts"
-papercuts version
+curl -fsSL https://raw.githubusercontent.com/ryan-warner/papercuts/main/install.sh | sh
 ```
 
-On Windows, extract the ZIP file. Move `papercuts.exe` to a directory on
-`PATH`, and then run:
+The script detects the operating system and processor, verifies the archive
+against `checksums.txt`, and installs the executable in `$HOME/.local/bin`.
+Set `PAPERCUTS_INSTALL_DIR` or pass a directory as the first argument to
+install elsewhere.
 
-```powershell
-papercuts version
-```
+To install manually, download the archive for your operating system and
+processor from the [Releases page](https://github.com/ryan-warner/papercuts/releases).
+On macOS or Linux, extract it and copy `papercuts` to a directory on `PATH`.
+On Windows, extract the ZIP file and move `papercuts.exe` to a directory on
+`PATH`.
 
 To install from source, use Go 1.25 or later:
 
 ```sh
-GOPRIVATE=github.com/ryan-warner/* \
-  go install github.com/ryan-warner/papercuts/cmd/papercuts@latest
+go install github.com/ryan-warner/papercuts/cmd/papercuts@latest
 ```
 
 ## Agent usage
