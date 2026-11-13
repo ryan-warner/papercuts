@@ -14,6 +14,7 @@ import (
 	"time"
 
 	"github.com/charmbracelet/huh"
+	"github.com/charmbracelet/lipgloss"
 	"github.com/ryan-warner/papercuts/internal/fix"
 	"github.com/ryan-warner/papercuts/internal/project"
 	"github.com/ryan-warner/papercuts/internal/store"
@@ -552,7 +553,7 @@ func (a *app) setupAgentsCommand() *cobra.Command {
 			}
 			available := availableAgentCandidates(home)
 			if len(available) == 0 {
-				fmt.Fprintln(a.out, "No supported agent configurations found.")
+				fmt.Fprintln(a.out, "no supported agent configurations found.")
 				return nil
 			}
 
@@ -560,7 +561,7 @@ func (a *app) setupAgentsCommand() *cobra.Command {
 				options := make([]huh.Option[int], 0, len(available))
 				selected := make([]int, 0, len(available))
 				for index, candidate := range available {
-					label := fmt.Sprintf("%s — %s", candidate.name, candidate.path)
+					label := fmt.Sprintf("%s — %s", candidate.name, strings.Replace(candidate.path, home+"/", "~/", 1))
 					if agentFileConfigured(candidate.path) {
 						label += " (already configured)"
 					} else {
@@ -568,15 +569,23 @@ func (a *app) setupAgentsCommand() *cobra.Command {
 					}
 					options = append(options, huh.NewOption(label, index))
 				}
+				theme := huh.ThemeBase()
+				theme.Focused.Base = lipgloss.NewStyle().PaddingLeft(2)
+				theme.Focused.Card = theme.Focused.Base
+				theme.Blurred.Base = theme.Focused.Base
+				theme.Blurred.Card = theme.Focused.Base
 				form := huh.NewForm(huh.NewGroup(huh.NewMultiSelect[int]().
-					Title("Agent guidance").
-					Description("Add papercuts instructions to the selected files.").
-					Options(options...).Value(&selected)))
+					Title("agent setup").
+					Description("add papercuts guidance — space toggles, enter confirms").
+					Options(options...).Value(&selected))).
+					WithTheme(theme).
+					WithShowHelp(false).
+					WithShowErrors(false)
 				if err := form.Run(); err != nil {
 					return err
 				}
 				if len(selected) == 0 {
-					fmt.Fprintln(a.out, "No files updated.")
+					fmt.Fprintln(a.out, "  no files selected")
 					return nil
 				}
 				var updated []string
@@ -591,10 +600,10 @@ func (a *app) setupAgentsCommand() *cobra.Command {
 					}
 				}
 				for _, path := range updated {
-					fmt.Fprintf(a.out, "Updated %s\n", path)
+					fmt.Fprintf(a.out, "  updated %s\n", path)
 				}
 				if len(updated) == 0 {
-					fmt.Fprintln(a.out, "Selected files are already configured.")
+					fmt.Fprintln(a.out, "  already configured")
 				}
 				return nil
 			}
