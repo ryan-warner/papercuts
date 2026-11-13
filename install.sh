@@ -76,6 +76,17 @@ echo "installed papercuts $version to $INSTALL_DIR/papercuts"
 # holds the piped script when run via curl | sh.
 setup_agents() {
   bin="$INSTALL_DIR/papercuts"
+
+  # Newer releases ship an interactive setup-agents command.
+  if "$bin" help setup-agents >/dev/null 2>&1; then
+    if true 2>/dev/null < /dev/tty; then
+      "$bin" setup-agents < /dev/tty
+    else
+      "$bin" setup-agents
+    fi
+    return
+  fi
+
   set -- "$HOME/.codex/AGENTS.md" \
     "$HOME/.claude/CLAUDE.md" \
     "$HOME/.config/opencode/AGENTS.md"

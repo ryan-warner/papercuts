@@ -43,13 +43,11 @@ go install github.com/ryan-warner/papercuts/cmd/papercuts@latest
 ## Agent usage
 
 Because papercuts applies across projects, put its instructions in your global
-agent guidance. Run the commands once for each agent you use:
+agent guidance. Run `papercuts setup-agents` to add the guidance to the agent
+instruction files it detects, or append them yourself:
 
 ```sh
-# Codex
 papercuts agent-instructions >> "$HOME/.codex/AGENTS.md"
-
-# Claude Code
 papercuts agent-instructions >> "$HOME/.claude/CLAUDE.md"
 ```
 

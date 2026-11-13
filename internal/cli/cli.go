@@ -70,7 +70,7 @@ func New(version string) *cobra.Command {
 		a.addCommand(), a.listCommand(), a.showCommand(),
 		a.stateCommand("resolve", true), a.stateCommand("reopen", false),
 		a.reviewCommand(), a.statsCommand(), a.projectsCommand(),
-		a.fixCommand(), a.instructionsCommand(), a.doctorCommand(),
+		a.fixCommand(), a.instructionsCommand(), a.setupAgentsCommand(), a.doctorCommand(),
 	)
 	root.AddCommand(&cobra.Command{
 		Use: "version", Short: "Print the version", Args: cobra.NoArgs,
@@ -480,6 +480,136 @@ func (a *app) instructionsCommand() *cobra.Command {
 				return writeJSON(a.out, map[string]string{"instructions": agentInstructions})
 			}
 			fmt.Fprint(a.out, agentInstructions)
+			return nil
+		},
+	}
+}
+
+type agentCandidate struct {
+	name string
+	dir  string
+	path string
+}
+
+func agentCandidates(home string) []agentCandidate {
+	return []agentCandidate{
+		{name: "Codex", dir: filepath.Join(home, ".codex"), path: filepath.Join(home, ".codex", "AGENTS.md")},
+		{name: "Claude Code", dir: filepath.Join(home, ".claude"), path: filepath.Join(home, ".claude", "CLAUDE.md")},
+		{name: "OpenCode", dir: filepath.Join(home, ".config", "opencode"), path: filepath.Join(home, ".config", "opencode", "AGENTS.md")},
+	}
+}
+
+func availableAgentCandidates(home string) []agentCandidate {
+	var available []agentCandidate
+	for _, candidate := range agentCandidates(home) {
+		if info, err := os.Stat(candidate.dir); err == nil && info.IsDir() {
+			available = append(available, candidate)
+		}
+	}
+	return available
+}
+
+func agentFileConfigured(path string) bool {
+	data, err := os.ReadFile(path)
+	return err == nil && strings.Contains(string(data), "papercuts")
+}
+
+func appendAgentInstructions(path string) (bool, error) {
+	if agentFileConfigured(path) {
+		return false, nil
+	}
+	file, err := os.OpenFile(path, os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0o644)
+	if err != nil {
+		return false, err
+	}
+	defer file.Close()
+	if _, err := fmt.Fprintln(file); err != nil {
+		return false, err
+	}
+	if _, err := fmt.Fprint(file, agentInstructions); err != nil {
+		return false, err
+	}
+	return true, nil
+}
+
+func canOpenTTY() bool {
+	file, err := os.OpenFile("/dev/tty", os.O_RDWR, 0)
+	if err != nil {
+		return false
+	}
+	return file.Close() == nil
+}
+
+func (a *app) setupAgentsCommand() *cobra.Command {
+	return &cobra.Command{
+		Use:   "setup-agents",
+		Short: "Add papercuts guidance to detected agent instruction files",
+		Args:  cobra.NoArgs,
+		RunE: func(_ *cobra.Command, _ []string) error {
+			home, err := os.UserHomeDir()
+			if err != nil {
+				return err
+			}
+			available := availableAgentCandidates(home)
+			if len(available) == 0 {
+				fmt.Fprintln(a.out, "No supported agent configurations found.")
+				return nil
+			}
+
+			if !a.jsonOutput && !a.noInput && canOpenTTY() {
+				options := make([]huh.Option[int], 0, len(available))
+				selected := make([]int, 0, len(available))
+				for index, candidate := range available {
+					label := fmt.Sprintf("%s — %s", candidate.name, candidate.path)
+					if agentFileConfigured(candidate.path) {
+						label += " (already configured)"
+					} else {
+						selected = append(selected, index)
+					}
+					options = append(options, huh.NewOption(label, index))
+				}
+				form := huh.NewForm(huh.NewGroup(huh.NewMultiSelect[int]().
+					Title("Agent guidance").
+					Description("Add papercuts instructions to the selected files.").
+					Options(options...).Value(&selected)))
+				if err := form.Run(); err != nil {
+					return err
+				}
+				if len(selected) == 0 {
+					fmt.Fprintln(a.out, "No files updated.")
+					return nil
+				}
+				var updated []string
+				for _, index := range selected {
+					candidate := available[index]
+					changed, err := appendAgentInstructions(candidate.path)
+					if err != nil {
+						return err
+					}
+					if changed {
+						updated = append(updated, candidate.path)
+					}
+				}
+				for _, path := range updated {
+					fmt.Fprintf(a.out, "Updated %s\n", path)
+				}
+				if len(updated) == 0 {
+					fmt.Fprintln(a.out, "Selected files are already configured.")
+				}
+				return nil
+			}
+
+			if a.jsonOutput {
+				agents := make([]map[string]string, 0, len(available))
+				for _, candidate := range available {
+					agents = append(agents, map[string]string{"agent": candidate.name, "path": candidate.path})
+				}
+				return writeJSON(a.out, map[string]any{"agents": agents})
+			}
+			fmt.Fprintln(a.out, "Teach your agents to record papercuts:")
+			for _, candidate := range available {
+				fmt.Fprintf(a.out, "  papercuts agent-instructions >> \"%s\"\n", candidate.path)
+			}
 			return nil
 		},
 	}

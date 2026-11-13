@@ -29,6 +29,7 @@ papercuts review
 | `papercuts projects` | List every project with recorded entries and its totals. |
 | `papercuts doctor` | Show the detected repository, worktree, working directory, and database path. |
 | `papercuts agent-instructions` | Print reusable guidance that tells an agent when to record a papercut. |
+| `papercuts setup-agents` | Add papercuts guidance to the agent instruction files detected on the machine. |
 | `papercuts completion <shell>` | Generate shell completion configuration. |
 | `papercuts version` | Print the installed version. |
 
