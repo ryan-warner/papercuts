@@ -73,8 +73,8 @@ chmod 755 "$tmp/papercuts"
 cp -f "$tmp/papercuts" "$INSTALL_DIR/papercuts"
 
 echo "installed papercuts $version"
-printf "version: "
-"$INSTALL_DIR/papercuts" version
+"$INSTALL_DIR/papercuts" version >/dev/null ||
+  fail "installed binary failed to run"
 
 case ":$PATH:" in
   *":$INSTALL_DIR:"*) ;;
