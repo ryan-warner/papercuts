@@ -137,7 +137,7 @@
 
   <div class="intro">
     <h1 class="wordmark">papercuts<span class="cursor"></span></h1>
-    <p class="tagline">Track it now. Keep going. Fix it later.</p>
+    <p class="tagline">Track it now. Fix it later.</p>
 
     <div class="install">
       <code><span class="ps1">$</span> curl -fsSL https://ryan-warner.github.io/papercuts/install.sh | sh</code>
@@ -170,16 +170,16 @@
 
   var steps = [
     {
-      cmd: 'papercuts add "Release docs live in a Slack thread"',
+      cmd: 'papercuts add "Prod runs on the intern\'s script"',
       out: ["Recorded papercut #7 in papercuts"]
     },
     {
       cmd: "papercuts list",
       out: [
-        "ID  STATUS  AGE  OBSERVATION",
-        "7   open    now  Release docs live in a Slack thread",
-        "6   open    1d   Migrations only work on Dave's laptop",
-        "5   open    3d   We re-run CI until it goes green"
+        "ID  STATUS  AGE    OBSERVATION",
+        "7   open    now    Prod runs on the intern's script",
+        "6   open    1d     Untested, undocumented, load-bearing",
+        "5   open    1826d  The intern left in 2021. The cron still runs."
       ]
     },
     {
