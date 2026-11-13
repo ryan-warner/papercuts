@@ -71,3 +71,58 @@ esac
 
 echo "installed papercuts $version to $INSTALL_DIR/papercuts"
 "$INSTALL_DIR/papercuts" version
+
+# Offer to append agent guidance. Prompts read from /dev/tty because stdin
+# holds the piped script when run via curl | sh.
+setup_agents() {
+  bin="$INSTALL_DIR/papercuts"
+  set -- "$HOME/.codex/AGENTS.md" \
+    "$HOME/.claude/CLAUDE.md" \
+    "$HOME/.config/opencode/AGENTS.md"
+
+  present=false
+  for file in "$@"; do
+    [ -d "$(dirname "$file")" ] && present=true
+  done
+  if [ "$present" = false ]; then
+    return 0
+  fi
+
+  # /dev/tty exists as a device node even without a controlling terminal;
+  # probe whether it can be opened.
+  if ! true 2>/dev/null < /dev/tty; then
+    echo ""
+    echo "next: teach your agents to record papercuts"
+    for file in "$@"; do
+      [ -d "$(dirname "$file")" ] || continue
+      echo "  papercuts agent-instructions >> \"$file\""
+    done
+    return 0
+  fi
+
+  echo ""
+  echo "agent setup"
+  for file in "$@"; do
+    [ -d "$(dirname "$file")" ] || continue
+    if grep -q "papercuts" "$file" 2>/dev/null; then
+      echo "  $file (already configured)"
+      continue
+    fi
+    printf "  add papercuts guidance to %s? [y/N] " "$file"
+    answer=""
+    read answer < /dev/tty || answer=""
+    answer=$(printf '%s' "$answer" | tr '[:upper:]' '[:lower:]')
+    case "$answer" in
+      y | yes)
+        printf '\n' >> "$file"
+        if "$bin" agent-instructions >> "$file"; then
+          echo "  added guidance to $file"
+        else
+          echo "  failed to update $file" >&2
+          exit 1
+        fi
+        ;;
+    esac
+  done
+}
+setup_agents

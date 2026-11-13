@@ -25,7 +25,8 @@ curl -fsSL https://raw.githubusercontent.com/ryan-warner/papercuts/main/install.
 The script detects the operating system and processor, verifies the archive
 against `checksums.txt`, and installs the executable in `$HOME/.local/bin`.
 Set `PAPERCUTS_INSTALL_DIR` or pass a directory as the first argument to
-install elsewhere.
+install elsewhere. The installer then offers to append agent guidance to the
+Codex, Claude Code, and OpenCode instruction files it detects.
 
 To install manually, download the archive for your operating system and
 processor from the [Releases page](https://github.com/ryan-warner/papercuts/releases).
