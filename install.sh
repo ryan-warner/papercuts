@@ -31,6 +31,8 @@ esac
 
 command -v curl >/dev/null 2>&1 || fail "curl is required"
 
+echo ""
+echo "locating latest release"
 tag=$(curl -fsSL "https://api.github.com/repos/$REPO/releases/latest" |
   sed -n 's/.*"tag_name"[[:space:]]*:[[:space:]]*"\([^"]*\)".*/\1/p' |
   head -n 1)
@@ -43,6 +45,7 @@ tmp=$(mktemp -d)
 trap 'rm -rf "$tmp"' EXIT
 
 base_url="https://github.com/$REPO/releases/download/$tag"
+echo "downloading $archive"
 curl -fsSL -o "$tmp/$archive" "$base_url/$archive" ||
   fail "download failed for $archive"
 curl -fsSL -o "$tmp/checksums.txt" "$base_url/checksums.txt"
@@ -54,23 +57,29 @@ elif command -v shasum >/dev/null 2>&1; then
 else
   fail "sha256sum or shasum is required to verify the download"
 fi
-(cd "$tmp" && grep "  $archive\$" checksums.txt | $checksum_cmd -c -) ||
+echo "verifying checksum"
+if (cd "$tmp" && grep "  $archive\$" checksums.txt | $checksum_cmd -c - >/dev/null 2>&1); then
+  echo "  checksum ok"
+else
   fail "checksum verification failed for $archive"
+fi
 
 tar -xzf "$tmp/$archive" -C "$tmp"
 [ -f "$tmp/papercuts" ] || fail "archive did not contain a papercuts binary"
 
+echo "installing to $INSTALL_DIR"
 mkdir -p "$INSTALL_DIR"
 chmod 755 "$tmp/papercuts"
 cp -f "$tmp/papercuts" "$INSTALL_DIR/papercuts"
+
+echo "installed papercuts $version"
+printf "version: "
+"$INSTALL_DIR/papercuts" version
 
 case ":$PATH:" in
   *":$INSTALL_DIR:"*) ;;
   *) echo "note: $INSTALL_DIR is not on your PATH; add it to run 'papercuts' directly" >&2 ;;
 esac
-
-echo "installed papercuts $version to $INSTALL_DIR/papercuts"
-"$INSTALL_DIR/papercuts" version
 
 # Offer to append agent guidance. Prompts read from /dev/tty because stdin
 # holds the piped script when run via curl | sh.
@@ -149,7 +158,7 @@ sign_off() {
   echo ""
   echo "all set. work as normal."
   if [ "$configured" = true ]; then
-    echo "ask an agent to \"fix the papercuts\" whenever you're ready."
+    echo "ask an agent to \"fix papercuts\" whenever you're ready."
   else
     echo "log friction with papercuts add \"<observation>\", then run papercuts fix when you're ready."
   fi
