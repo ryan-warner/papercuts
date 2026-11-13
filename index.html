@@ -1,0 +1,377 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>papercuts — cut the small stuff</title>
+<meta name="description" content="papercuts records avoidable friction that AI agents and developers encounter while working in software projects. One user-level SQLite database, grouped by repository.">
+<style>
+  :root {
+    --bg: #0a0f0b;
+    --panel: #0d1410;
+    --green: #42f06b;
+    --green-soft: #9fdcb0;
+    --amber: #ffc266;
+    --text: #b9d8c2;
+    --muted: #6e8a78;
+    --border: #24382b;
+    --mono: ui-monospace, "SF Mono", SFMono-Regular, Menlo, Consolas, "Liberation Mono", monospace;
+  }
+  * { box-sizing: border-box; }
+  html { scrollbar-color: var(--border) var(--bg); }
+  body {
+    margin: 0;
+    background: var(--bg);
+    color: var(--text);
+    font: 16px/1.65 var(--mono);
+  }
+  /* CRT scanlines + vignette */
+  body::before {
+    content: "";
+    position: fixed; inset: 0; z-index: 9;
+    pointer-events: none;
+    background: repeating-linear-gradient(0deg,
+      rgba(0,0,0,.22) 0, rgba(0,0,0,.22) 1px, transparent 1px, transparent 3px);
+  }
+  body::after {
+    content: "";
+    position: fixed; inset: 0; z-index: 8;
+    pointer-events: none;
+    background: radial-gradient(ellipse at center, transparent 60%, rgba(0,0,0,.5) 100%);
+  }
+  ::selection { background: var(--green); color: #06140a; }
+  a { color: var(--green); text-decoration: none; border-bottom: 1px dotted var(--border); }
+  a:hover { border-bottom-style: solid; text-shadow: 0 0 8px rgba(66,240,107,.5); }
+
+  .wrap { max-width: 58rem; margin: 0 auto; padding: 0 1.25rem; }
+
+  header {
+    display: flex; justify-content: space-between; align-items: center;
+    padding: .9rem 0;
+    border-bottom: 1px solid var(--border);
+    font-size: .9rem;
+  }
+  header .path { color: var(--muted); }
+  header .path b { color: var(--amber); font-weight: normal; }
+  nav a { margin-left: 1.25rem; }
+
+  .hero { text-align: center; padding: 3.5rem 0 2rem; }
+  .hero pre.logo {
+    display: inline-block; text-align: left;
+    margin: 0 0 1rem; font-size: clamp(.45rem, 2.1vw, .95rem); line-height: 1.15;
+    color: var(--green);
+    text-shadow: 0 0 10px rgba(66,240,107,.4), 0 0 30px rgba(66,240,107,.15);
+  }
+  .hero .tagline { color: var(--green-soft); font-size: 1.05rem; }
+  .hero .facts { color: var(--muted); font-size: .85rem; margin-top: .6rem; }
+  .hero .facts span { color: var(--amber); }
+
+  .panel {
+    background: var(--panel);
+    border: 1px solid var(--border);
+    border-radius: 4px;
+    margin: 1.5rem 0;
+    box-shadow: 0 0 0 1px rgba(0,0,0,.4), 0 0 24px rgba(66,240,107,.05);
+  }
+  .panel-bar {
+    display: flex; align-items: center; gap: .5rem;
+    padding: .5rem .9rem;
+    border-bottom: 1px solid var(--border);
+    color: var(--muted); font-size: .8rem;
+  }
+  .dot { width: .7rem; height: .7rem; border-radius: 50%; display: inline-block; }
+  .dot.r { background: #ff5f56; } .dot.y { background: #ffbd2e; } .dot.g { background: #27c93f; }
+  .panel-bar .title { margin-left: .5rem; }
+  .panel-body { padding: 1rem 1.1rem; overflow-x: auto; }
+
+  .install-line { display: flex; align-items: center; gap: 1rem; white-space: nowrap; }
+  .install-line code { color: var(--green-soft); }
+  .ps1 { color: var(--amber); }
+
+  button.copy {
+    font: inherit; font-size: .8rem;
+    background: transparent; color: var(--green);
+    border: 1px solid var(--border); border-radius: 3px;
+    padding: .25rem .7rem; cursor: pointer;
+    flex-shrink: 0;
+  }
+  button.copy:hover { border-color: var(--green); box-shadow: 0 0 10px rgba(66,240,107,.25); }
+  button.copy.done { color: var(--amber); border-color: var(--amber); }
+
+  section { padding: 1.5rem 0; }
+  h2 {
+    color: var(--amber); font-size: .85rem; font-weight: normal;
+    text-transform: uppercase; letter-spacing: .2em;
+    margin: 0 0 1rem;
+  }
+  h2::before { content: "// "; color: var(--muted); }
+
+  .term-body { min-height: 15.5rem; font-size: .88rem; }
+  .term-body .line { white-space: pre-wrap; word-break: break-word; }
+  .term-body .out { color: var(--green-soft); white-space: pre-wrap; }
+  .term-body .out.dim { color: var(--muted); }
+  .cursor {
+    display: inline-block; width: .55em; height: 1.05em;
+    background: var(--green); vertical-align: text-bottom;
+    animation: blink 1.1s steps(1) infinite;
+    box-shadow: 0 0 8px rgba(66,240,107,.6);
+  }
+  @keyframes blink { 50% { opacity: 0; } }
+  .replay { font-size: .8rem; color: var(--muted); margin-left: auto; }
+  .replay:hover { color: var(--green); }
+
+  table { border-collapse: collapse; width: 100%; font-size: .88rem; }
+  th, td { text-align: left; padding: .5rem .75rem; border: 1px solid var(--border); vertical-align: top; }
+  th { color: var(--amber); font-weight: normal; text-transform: uppercase; font-size: .75rem; letter-spacing: .12em; background: rgba(66,240,107,.04); }
+  td:first-child { color: var(--green); white-space: nowrap; }
+  td:last-child { color: var(--text); }
+  .more { margin-top: .8rem; font-size: .85rem; color: var(--muted); }
+
+  footer {
+    margin-top: 2rem; padding: 1.25rem 0 2rem;
+    border-top: 1px solid var(--border);
+    color: var(--muted); font-size: .85rem;
+    display: flex; justify-content: space-between; flex-wrap: wrap; gap: .75rem;
+  }
+  @media (max-width: 34rem) {
+    .install-line { flex-direction: column; align-items: stretch; }
+    .install-line code { overflow-x: auto; }
+  }
+  @media (prefers-reduced-motion: reduce) {
+    .cursor { animation: none; }
+  }
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <header>
+    <span class="path"><b>~/</b>papercuts</span>
+    <nav>
+      <a href="https://github.com/ryan-warner/papercuts">source</a>
+      <a href="docs/commands.html">docs</a>
+      <a href="https://github.com/ryan-warner/papercuts/releases">releases</a>
+    </nav>
+  </header>
+
+  <div class="hero">
+<pre class="logo">
+ _ __            _ __                                     _
+| '_ \    __ _  | '_ \    ___    _ __     ___    _   _  | |_   ___
+| |_) |  / _` | | |_) |  / _ \  | '__|   / __|  | | | | | __| / __|
+| .__/  | (_| | | .__/  |  __/  | |     | (__   | | | | | |_  \__ \
+|_|       \__,_| |_|       \___|   |_|       \___|   | |_| |  \__| |___/
+</pre>
+    <p class="tagline">Record the small stuff that slows you down. Ship the fixes.</p>
+    <p class="facts">one binary <span>·</span> sqlite under the hood <span>·</span> zero config <span>·</span> agent-ready</p>
+  </div>
+
+  <div class="panel">
+    <div class="panel-bar">
+      <span class="dot r"></span><span class="dot y"></span><span class="dot g"></span>
+      <span class="title">install — sh</span>
+    </div>
+    <div class="panel-body">
+      <div class="install-line">
+        <code><span class="ps1">$</span> curl -fsSL https://ryan-warner.github.io/papercuts/install.sh | sh</code>
+        <button class="copy" data-copy="curl -fsSL https://ryan-warner.github.io/papercuts/install.sh | sh">[ copy ]</button>
+      </div>
+    </div>
+  </div>
+
+  <section>
+    <h2>demo</h2>
+    <div class="panel">
+      <div class="panel-bar">
+        <span class="dot r"></span><span class="dot y"></span><span class="dot g"></span>
+        <span class="title">papercuts — zsh</span>
+        <a href="#" class="replay" id="replay">[ replay ]</a>
+      </div>
+      <div class="panel-body">
+        <div class="term-body" id="term"></div>
+      </div>
+    </div>
+  </section>
+
+  <section>
+    <h2>commands</h2>
+    <table>
+      <tr><th>command</th><th>use</th></tr>
+      <tr><td>papercuts add "&lt;observation&gt;"</td><td>Record a concise description of avoidable friction. Use --stdin for piped input.</td></tr>
+      <tr><td>papercuts list</td><td>List open entries for the current project.</td></tr>
+      <tr><td>papercuts show &lt;id&gt;</td><td>Show one entry and its recorded project context.</td></tr>
+      <tr><td>papercuts resolve &lt;id...&gt;</td><td>Mark one or more entries as resolved.</td></tr>
+      <tr><td>papercuts reopen &lt;id...&gt;</td><td>Return resolved entries to the open list.</td></tr>
+      <tr><td>papercuts review</td><td>Interactively review open entries and resolve selected items.</td></tr>
+      <tr><td>papercuts fix</td><td>Generate an agent-ready maintenance prompt from open entries.</td></tr>
+      <tr><td>papercuts stats</td><td>Show totals, the oldest open entry, and average resolution time.</td></tr>
+      <tr><td>papercuts projects</td><td>List every project with recorded entries and its totals.</td></tr>
+      <tr><td>papercuts doctor</td><td>Show the detected repository, worktree, working directory, and database path.</td></tr>
+    </table>
+    <p class="more">full reference: <a href="docs/commands.html">command guide</a></p>
+  </section>
+
+  <section>
+    <h2>for agents</h2>
+    <p>Because papercuts applies across projects, put its instructions in your global agent guidance:</p>
+    <div class="panel">
+      <div class="panel-bar"><span class="title">agents — sh</span></div>
+      <div class="panel-body">
+<pre style="margin:0"><span class="ps1">$</span> papercuts agent-instructions &gt;&gt; "$HOME/.codex/AGENTS.md"
+<span class="ps1">$</span> papercuts agent-instructions &gt;&gt; "$HOME/.claude/CLAUDE.md"</pre>
+      </div>
+    </div>
+    <p>Then agents record papercuts as they work, and <code>papercuts fix</code> turns the backlog into a maintenance prompt.</p>
+  </section>
+
+  <footer>
+    <span><span class="ps1">$</span> echo "cut the small stuff"</span>
+    <span>v0.1.0 · <a href="https://github.com/ryan-warner/papercuts">github.com/ryan-warner/papercuts</a></span>
+  </footer>
+
+</div>
+
+<script>
+(function () {
+  "use strict";
+
+  var steps = [
+    {
+      cmd: 'papercuts add "Every repo re-implements the same release checklist"',
+      out: ["Recorded papercut #2 in papercuts"]
+    },
+    {
+      cmd: "papercuts list",
+      out: [
+        "ID  STATUS  AGE  OBSERVATION",
+        "2   open    now  Every repo re-implements the same release checklist",
+        "1   open    now  The fixture generator is undocumented"
+      ]
+    },
+    {
+      cmd: "papercuts stats",
+      out: [
+        "papercuts",
+        "",
+        "Open:       2",
+        "Resolved:   0",
+        "Total:      2",
+        "Oldest open: 2026-11-13 10:53"
+      ]
+    }
+  ];
+
+  var term = document.getElementById("term");
+  var reduced = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+  var timers = [];
+
+  function el(tag, cls, text) {
+    var node = document.createElement(tag);
+    if (cls) node.className = cls;
+    if (text != null) node.textContent = text;
+    return node;
+  }
+
+  function promptLine() {
+    var line = el("div", "line");
+    line.appendChild(el("span", "ps1", "$"));
+    line.appendChild(document.createTextNode(" "));
+    var typed = el("span", "typed");
+    var cursor = el("span", "cursor");
+    line.appendChild(typed);
+    line.appendChild(cursor);
+    term.appendChild(line);
+    return { typed: typed, cursor: cursor };
+  }
+
+  function sleep(ms) {
+    return new Promise(function (resolve) {
+      timers.push(setTimeout(resolve, ms));
+    });
+  }
+
+  function run() {
+    timers.forEach(clearTimeout);
+    timers = [];
+    term.textContent = "";
+
+    if (reduced) {
+      steps.forEach(function (step) {
+        var line = promptLine();
+        line.typed.textContent = step.cmd;
+        line.cursor.remove();
+        term.appendChild(el("div", "out", step.out.join("\n")));
+      });
+      promptLine();
+      return;
+    }
+
+    var state = { stopped: false };
+    (async function () {
+      for (var i = 0; i < steps.length && !state.stopped; i++) {
+        var current = promptLine();
+        var cmd = steps[i].cmd;
+        for (var c = 0; c < cmd.length && !state.stopped; c++) {
+          current.typed.textContent += cmd.charAt(c);
+          await sleep(14 + Math.random() * 22);
+        }
+        if (state.stopped) return;
+        current.cursor.remove();
+        term.appendChild(el("div", "out", steps[i].out.join("\n")));
+        await sleep(420);
+      }
+      if (!state.stopped) promptLine();
+    })();
+  }
+
+  var started = false;
+  function start() {
+    if (started) return;
+    started = true;
+    run();
+  }
+
+  if ("IntersectionObserver" in window) {
+    var io = new IntersectionObserver(function (entries) {
+      entries.forEach(function (entry) {
+        if (entry.isIntersecting) { start(); io.disconnect(); }
+      });
+    }, { threshold: 0.4 });
+    io.observe(term);
+  } else {
+    start();
+  }
+
+  document.getElementById("replay").addEventListener("click", function (event) {
+    event.preventDefault();
+    run();
+  });
+
+  document.querySelectorAll("button.copy").forEach(function (button) {
+    button.addEventListener("click", function () {
+      var text = button.getAttribute("data-copy");
+      function done() {
+        button.textContent = "[ copied ]";
+        button.classList.add("done");
+        setTimeout(function () {
+          button.textContent = "[ copy ]";
+          button.classList.remove("done");
+        }, 1600);
+      }
+      if (navigator.clipboard && navigator.clipboard.writeText) {
+        navigator.clipboard.writeText(text).then(done, done);
+      } else {
+        var ta = document.createElement("textarea");
+        ta.value = text;
+        document.body.appendChild(ta);
+        ta.select();
+        try { document.execCommand("copy"); } catch (e) {}
+        ta.remove();
+        done();
+      }
+    });
+  });
+})();
+</script>
+</body>
+</html>
