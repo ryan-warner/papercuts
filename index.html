@@ -170,16 +170,16 @@
 
   var steps = [
     {
-      cmd: 'papercuts add "Prod root creds are pinned in Slack"',
+      cmd: 'papercuts add "Prod DB creds are pinned in Slack"',
       out: ["Recorded papercut #7 in papercuts"]
     },
     {
       cmd: "papercuts list",
       out: [
         "ID  STATUS  AGE    OBSERVATION",
-        "7   open    now    Prod root creds are pinned in Slack",
-        "6   open    1d     Every engineer has prod DB admin",
-        "5   open    1826d  The intern dropped prod in 2021"
+        "7   open    now    Prod DB creds are pinned in Slack",
+        "6   open    1d     Deploys need the intern's laptop",
+        "5   open    1826d  All prod data lives in _test tables"
       ]
     },
     {
