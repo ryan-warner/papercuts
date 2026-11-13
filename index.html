@@ -178,7 +178,7 @@
       out: [
         "ID  STATUS  AGE    OBSERVATION",
         "7   open    now    Prod DB creds are pinned in Slack",
-        "6   open    1d     Only the intern has permission to deploy",
+        "6   open    1d     Deploys require the intern's approval",
         "5   open    1826d  All prod data lives in _test tables"
       ]
     },
@@ -236,7 +236,7 @@
         }
         current.cursor.remove();
         term.appendChild(el("div", "out", steps[i].out.join("\n")));
-        await sleep(420);
+        await sleep(900);
       }
       promptLine();
     })();
